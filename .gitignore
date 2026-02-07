@@ -1,0 +1,72 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.env
+.venv
+venv/
+ENV/
+
+# Django
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+
+# Node / React
+node_modules/
+dist/
+dist-ssr/
+*.local
+.eslintcache
+.stylelintcache
+.vite/
+.next/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Brain / Logs
+.gemini/
+.agent/
+backend/*.py
+!backend/manage.py
+!backend/academiyahub/
+!backend/core/
+!backend/users/
+!backend/__init__.py
+# Allow specific scripts if needed, but exclude temp ones
+backend/diag_teacher_students.py
+backend/provision_students.py
+backend/populate_realistic_data.py
+backend/test_all_features.py
+backend/test_api_permissions_urllib.py
+backend/debug_verif.py
+backend/final_fix_verif.py
+backend/get_admin_email.py
+backend/show_urls.py
+backend/check_data.py
+backend/list_users.py
