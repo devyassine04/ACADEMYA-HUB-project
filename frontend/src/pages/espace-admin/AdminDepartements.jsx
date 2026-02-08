@@ -28,7 +28,14 @@ export default function AdminDepartements() {
     // 3. MUTATIONS
     const deleteMutation = useMutation({
         mutationFn: departementAPI.delete,
-        onSuccess: () => queryClient.invalidateQueries(['departements']),
+        onSuccess: () => {
+            console.log('✅ Département supprimé avec succès');
+            queryClient.invalidateQueries(['departements']);
+        },
+        onError: (error) => {
+            console.error('❌ Erreur lors de la suppression:', error);
+            alert(`Erreur: ${error.response?.data?.detail || error.message}`);
+        },
     });
 
     const createMutation = useMutation({
@@ -37,6 +44,10 @@ export default function AdminDepartements() {
             queryClient.invalidateQueries(['departements']);
             setIsModalOpen(false);
             setFormData({ code: '', name: '', description: '' });
+        },
+        onError: (error) => {
+            console.error('❌ Erreur lors de la création:', error);
+            alert(`Erreur: ${error.response?.data?.detail || error.message}`);
         },
     });
 
@@ -47,10 +58,18 @@ export default function AdminDepartements() {
             setIsModalOpen(false);
             setEditingItem(null);
         },
+        onError: (error) => {
+            console.error('❌ Erreur lors de la modification:', error);
+            alert(`Erreur: ${error.response?.data?.detail || error.message}`);
+        },
     });
 
     const handleDelete = (id) => {
-        if (window.confirm("Supprimer ce département ?")) {
+        console.log('🗑️ Tentative de suppression du département ID:', id);
+        const confirmed = window.confirm("Voulez-vous vraiment supprimer ce département ?");
+        console.log('Confirmation:', confirmed);
+        if (confirmed) {
+            console.log('Envoi de la requête DELETE...');
             deleteMutation.mutate(id);
         }
     };

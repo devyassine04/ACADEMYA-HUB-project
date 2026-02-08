@@ -42,7 +42,14 @@ export default function AdminModules() {
 
     const deleteMutation = useMutation({
         mutationFn: moduleAPI.delete,
-        onSuccess: () => queryClient.invalidateQueries(['modules']),
+        onSuccess: () => {
+            console.log('✅ Module supprimé');
+            queryClient.invalidateQueries(['modules']);
+        },
+        onError: (error) => {
+            console.error('❌ Erreur suppression module:', error);
+            alert(`Erreur: ${error.response?.data?.detail || error.message}`);
+        },
     });
 
     const createMutation = useMutation({
@@ -51,6 +58,10 @@ export default function AdminModules() {
             queryClient.invalidateQueries(['modules']);
             setIsModalOpen(false);
             setFormData({ code: '', name: '', filiere: '', enseignant: '', semestre: 1, coefficient: 1.0, heures_cm: 0, heures_td: 0, heures_tp: 0 });
+        },
+        onError: (error) => {
+            console.error('❌ Erreur création module:', error);
+            alert(`Erreur: ${error.response?.data?.detail || error.message}`);
         },
     });
 
@@ -61,10 +72,18 @@ export default function AdminModules() {
             setIsModalOpen(false);
             setEditingModule(null);
         },
+        onError: (error) => {
+            console.error('❌ Erreur modification module:', error);
+            alert(`Erreur: ${error.response?.data?.detail || error.message}`);
+        },
     });
 
     const handleDelete = (id) => {
-        if (window.confirm("Supprimer ce module ?")) deleteMutation.mutate(id);
+        console.log('🗑️ Suppression module ID:', id);
+        const confirmed = window.confirm("Voulez-vous vraiment supprimer ce module ?");
+        if (confirmed) {
+            deleteMutation.mutate(id);
+        }
     };
 
     const handleSubmit = (e) => {

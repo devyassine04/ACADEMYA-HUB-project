@@ -1,6 +1,6 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny, SAFE_METHODS
+from rest_framework.permissions import IsAuthenticated, AllowAny, SAFE_METHODS, BasePermission
 from django.utils import timezone
 from django.db.models import Q
 from rest_framework.decorators import api_view, permission_classes, action, authentication_classes
@@ -32,7 +32,7 @@ User = get_user_model()
 # ============================================
 # CUSTOM PERMISSIONS (FIXED!)
 # ============================================
-class IsAdminOrReadOnly:
+class IsAdminOrReadOnly(BasePermission):
     """
     FIXED: Allow public read access, ADMIN can edit
     Anyone can GET, only ADMIN can POST/PUT/DELETE
@@ -46,7 +46,8 @@ class IsAdminOrReadOnly:
         return request.user and request.user.is_authenticated and request.user.role in ['ADMIN', 'DIRECTION']
 
 
-class IsAdminOnly:
+class IsAdminOnly(BasePermission):
+    """Only authenticated ADMIN can access"""
     """Only authenticated ADMIN can access"""
     def has_permission(self, request, view):
         return request.user and request.user.is_authenticated and request.user.role == 'ADMIN'
@@ -70,6 +71,26 @@ class DepartementViewSet(viewsets.ModelViewSet):
         
         # Everyone else (including anonymous) sees all (for Departement)
         return queryset
+    
+    def destroy(self, request, *args, **kwargs):
+        from django.db.models import ProtectedError
+        from rest_framework.response import Response
+        from rest_framework import status
+        
+        instance = self.get_object()
+        try:
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ProtectedError:
+            return Response(
+                {'detail': 'Impossible de supprimer ce département car il contient des filières. Supprimez d\'abord les filières associées.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {'detail': f'Erreur lors de la suppression: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 # ============================================
@@ -101,6 +122,26 @@ class FiliereViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(niveau=niveau)
         
         return queryset
+    
+    def destroy(self, request, *args, **kwargs):
+        from django.db.models import ProtectedError
+        from rest_framework.response import Response
+        from rest_framework import status
+        
+        instance = self.get_object()
+        try:
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ProtectedError:
+            return Response(
+                {'detail': 'Impossible de supprimer cette filière car elle contient des modules ou des inscriptions. Supprimez d\'abord les éléments associés.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {'detail': f'Erreur lors de la suppression: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 # ============================================
@@ -138,13 +179,31 @@ class ModuleViewSet(viewsets.ModelViewSet):
         return queryset
     
     def perform_create(self, serializer):
-        # Only ADMIN can create modules
-        if self.request.user.role != 'ADMIN':
+        # Auto-assign current user if ENSEIGNANT
+        if self.request.user.role == 'ENSEIGNANT':
+            serializer.save(enseignant=self.request.user)
+        else:
+            serializer.save()
+    
+    def destroy(self, request, *args, **kwargs):
+        from django.db.models import ProtectedError
+        from rest_framework.response import Response
+        from rest_framework import status
+        
+        instance = self.get_object()
+        try:
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ProtectedError:
             return Response(
-                {'error': 'Seuls les administrateurs peuvent créer des modules.'},
-                status=status.HTTP_403_FORBIDDEN
+                {'detail': 'Impossible de supprimer ce module car il contient des notes. Supprimez d\'abord les notes associées.'},
+                status=status.HTTP_400_BAD_REQUEST
             )
-        serializer.save()
+        except Exception as e:
+            return Response(
+                {'detail': f'Erreur lors de la suppression: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 # ============================================

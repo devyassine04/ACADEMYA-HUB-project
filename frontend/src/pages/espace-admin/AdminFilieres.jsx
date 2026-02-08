@@ -41,6 +41,10 @@ export default function AdminFilieres() {
             setIsModalOpen(false);
             setFormData({ code: '', name: '', departement: '', niveau: 'LICENSE', capacity: 30 });
         },
+        onError: (error) => {
+            console.error('❌ Erreur création filière:', error);
+            alert(`Erreur: ${error.response?.data?.detail || error.message}`);
+        },
     });
 
     const updateMutation = useMutation({
@@ -50,11 +54,22 @@ export default function AdminFilieres() {
             setIsModalOpen(false);
             setEditingItem(null);
         },
+        onError: (error) => {
+            console.error('❌ Erreur modification filière:', error);
+            alert(`Erreur: ${error.response?.data?.detail || error.message}`);
+        },
     });
 
     const deleteMutation = useMutation({
         mutationFn: filiereAPI.delete,
-        onSuccess: () => queryClient.invalidateQueries(['filieres']),
+        onSuccess: () => {
+            console.log('✅ Filière supprimée');
+            queryClient.invalidateQueries(['filieres']);
+        },
+        onError: (error) => {
+            console.error('❌ Erreur suppression filière:', error);
+            alert(`Erreur: ${error.response?.data?.detail || error.message}`);
+        },
     });
 
     const handleSubmit = (e) => {
@@ -67,7 +82,11 @@ export default function AdminFilieres() {
     };
 
     const handleDelete = (id) => {
-        if (window.confirm("Supprimer cette filière ?")) deleteMutation.mutate(id);
+        console.log('🗑️ Suppression filière ID:', id);
+        const confirmed = window.confirm("Voulez-vous vraiment supprimer cette filière ?");
+        if (confirmed) {
+            deleteMutation.mutate(id);
+        }
     };
 
     const openModal = (item = null) => {
