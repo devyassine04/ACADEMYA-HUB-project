@@ -9,9 +9,8 @@ import {
   LogOut,
   Menu,
   X,
-  BarChart3,
   ChevronRight,
-  ChevronLeft, // Added this for the toggle button
+  ChevronLeft,
   BookOpen,
   FilePlus,
   FileCheck,
@@ -37,7 +36,7 @@ const Layout = () => {
     navigate('/login');
   };
 
-  // Helper for Menu Items
+  // Helper for Menu Items (J'ai corrigé le props destructuring ici pour être sûr)
   const MenuItem = ({ icon: Icon, label, path }) => {
     const isActive = location.pathname === path;
     return (
@@ -46,24 +45,19 @@ const Layout = () => {
           navigate(path);
           setIsSidebarOpen(false);
         }}
-        title={isCollapsed ? label : ""} // Shows tooltip when minimized
+        title={isCollapsed ? label : ""}
         className={`
-            flex items-center gap-3 rounded-lg py-3 font-medium transition-all duration-300
-            ${isCollapsed ? 'justify-center px-2 w-full' : 'px-4 w-full'}
+            flex items-center gap-3 rounded-lg py-3 font-medium transition-all duration-300 w-full
+            ${isCollapsed ? 'justify-center px-2' : 'px-4'}
             ${isActive
             ? 'bg-blue-600 text-white shadow-md'
             : 'text-gray-400 hover:bg-gray-800 hover:text-white'}
         `}
       >
-        {/* Icon (Fixed size) */}
         <Icon size={20} className="min-w-[20px]" />
-
-        {/* Label (Hidden when collapsed) */}
         {!isCollapsed && (
           <span className="truncate animate-in fade-in duration-200">{label}</span>
         )}
-
-        {/* Active Indicator Arrow (Hidden when collapsed) */}
         {!isCollapsed && isActive && <ChevronRight size={16} className="ml-auto opacity-70" />}
       </button>
     );
@@ -81,10 +75,8 @@ const Layout = () => {
             ${isCollapsed ? 'lg:w-20' : 'lg:w-64'}
         `}
       >
-        {/* Header: Logo + Toggle Button */}
+        {/* Header */}
         <div className={`flex h-20 items-center border-b border-gray-800 ${isCollapsed ? 'justify-center' : 'justify-between px-6'}`}>
-
-          {/* Logo Logic */}
           {!isCollapsed ? (
             <h1 className="text-2xl font-bold tracking-wider truncate">
               ACADEMIYA<span className="text-blue-500">.</span>
@@ -93,7 +85,6 @@ const Layout = () => {
             <h1 className="text-xl font-bold text-blue-500">AH</h1>
           )}
 
-          {/* Toggle Button (Desktop Only) */}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="hidden lg:block text-gray-400 hover:text-white focus:outline-none"
@@ -101,7 +92,6 @@ const Layout = () => {
             {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
           </button>
 
-          {/* Close Button (Mobile Only) */}
           <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden">
             <X size={24} className="text-gray-400" />
           </button>
@@ -110,7 +100,8 @@ const Layout = () => {
         {/* Navigation */}
         <nav className="mt-5 px-3 pb-20 overflow-y-auto h-[calc(100vh-160px)] scrollbar-hide space-y-2">
 
-          {/* DASHBOARD LINK */}
+          {/* --- LIEN DASHBOARD UNIVERSEL (Gère tout le monde) --- */}
+          {/* C'est ce bloc qui affichait le premier lien "Tableau de bord" */}
           <MenuItem
             icon={user?.role === 'DIRECTION' ? PieChart : LayoutDashboard}
             label={
@@ -145,7 +136,7 @@ const Layout = () => {
           {/* --- ESPACE ADMIN --- */}
           {user?.role === 'ADMIN' && (
             <>
-              <MenuItem icon={LayoutDashboard} label="Tableau de Bord" path="/admin/dashboard" />
+              {/* J'AI SUPPRIMÉ LA LIGNE "Tableau de Bord" ICI CAR ELLE FAISAIT DOUBLON AVEC LE LIEN UNIVERSEL */}
               <MenuItem icon={FileCheck} label="Validations" path="/admin/inscriptions" />
               <MenuItem icon={Building} label="Départements" path="/admin/departements" />
               <MenuItem icon={BookOpen} label="Filières" path="/admin/filieres" />
@@ -164,10 +155,8 @@ const Layout = () => {
 
         </nav>
 
-        {/* Logout (Bottom Fixed) */}
+        {/* Footer User & Logout */}
         <div className="absolute bottom-0 w-full border-t border-gray-800 bg-[#1C2434] p-4">
-
-          {/* User Info (Hidden when collapsed) */}
           {!isCollapsed && (
             <div className="mb-4 px-2 flex items-center gap-3 animate-in fade-in">
               <div className="h-8 w-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-sm">
@@ -194,10 +183,8 @@ const Layout = () => {
         </div>
       </aside>
 
-      {/* 2. MAIN CONTENT AREA */}
+      {/* Main Content */}
       <div className="flex flex-1 flex-col overflow-hidden transition-all duration-300">
-
-        {/* Header */}
         <header className="flex h-20 items-center justify-between bg-white px-8 shadow-sm border-b border-gray-200">
           <button onClick={() => setIsSidebarOpen(true)} className="rounded-md border p-2 text-gray-600 lg:hidden">
             <Menu size={24} />
@@ -212,8 +199,8 @@ const Layout = () => {
             </h2>
           </div>
 
+          {/* Avatar visible in header ONLY when sidebar is collapsed */}
           <div className="flex items-center gap-4">
-            {/* User Avatar in Header (Only visible if sidebar is collapsed for better UX) */}
             {isCollapsed && (
               <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
                 {user?.username?.charAt(0).toUpperCase()}
@@ -222,7 +209,6 @@ const Layout = () => {
           </div>
         </header>
 
-        {/* Scrollable Page Content */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-50 p-6 md:p-8">
           <div className="mx-auto max-w-7xl">
             <Outlet />
