@@ -8,6 +8,7 @@ export default function AdminModules() {
     const [searchTerm, setSearchTerm] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingModule, setEditingModule] = useState(null);
+    const [formData, setFormData] = useState({ code: '', name: '', filiere: '', enseignant: '', semestre: 1, coefficient: 1.0, heures_cm: 0, heures_td: 0, heures_tp: 0 });
 
     // 1. FETCH DATA
     const { data: modules = [], isLoading: loadingModules, isError: errorModules } = useQuery({
@@ -44,12 +45,50 @@ export default function AdminModules() {
         onSuccess: () => queryClient.invalidateQueries(['modules']),
     });
 
+    const createMutation = useMutation({
+        mutationFn: moduleAPI.create,
+        onSuccess: () => {
+            queryClient.invalidateQueries(['modules']);
+            setIsModalOpen(false);
+            setFormData({ code: '', name: '', filiere: '', enseignant: '', semestre: 1, coefficient: 1.0, heures_cm: 0, heures_td: 0, heures_tp: 0 });
+        },
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: ({ id, data }) => moduleAPI.update(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries(['modules']);
+            setIsModalOpen(false);
+            setEditingModule(null);
+        },
+    });
+
     const handleDelete = (id) => {
         if (window.confirm("Supprimer ce module ?")) deleteMutation.mutate(id);
     };
 
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (editingModule) {
+            updateMutation.mutate({ id: editingModule.id, data: formData });
+        } else {
+            createMutation.mutate(formData);
+        }
+    };
+
     const openModal = (module = null) => {
         setEditingModule(module);
+        setFormData(module ? {
+            code: module.code,
+            name: module.name,
+            filiere: module.filiere,
+            enseignant: module.enseignant || '',
+            semestre: module.semestre || 1,
+            coefficient: module.coefficient || 1.0,
+            heures_cm: module.heures_cm || 0,
+            heures_td: module.heures_td || 0,
+            heures_tp: module.heures_tp || 0
+        } : { code: '', name: '', filiere: '', enseignant: '', semestre: 1, coefficient: 1.0, heures_cm: 0, heures_td: 0, heures_tp: 0 });
         setIsModalOpen(true);
     };
 
@@ -132,13 +171,64 @@ export default function AdminModules() {
             )}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl max-w-md w-full p-6 animate-in zoom-in-95">
+                    <div className="bg-white rounded-xl max-w-lg w-full p-6 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
                         <h2 className="text-xl font-bold mb-4">{editingModule ? "Modifier" : "Nouveau"} Module</h2>
-                        <p className="text-slate-500 mb-6">Formulaire d'édition à implémenter complètement.</p>
-                        <div className="flex justify-end gap-3">
-                            <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg">Fermer</button>
-                            <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 bg-blue-600 text-white rounded-lg">Sauvegarder</button>
-                        </div>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Code</label>
+                                    <input type="text" value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value })} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Semestre</label>
+                                    <input type="number" min="1" max="8" value={formData.semestre} onChange={(e) => setFormData({ ...formData, semestre: parseInt(e.target.value) })} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Nom du Module</label>
+                                <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Filière</label>
+                                <select value={formData.filiere} onChange={(e) => setFormData({ ...formData, filiere: e.target.value })} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                                    <option value="">Sélectionner...</option>
+                                    {filieres.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Enseignant</label>
+                                <select value={formData.enseignant} onChange={(e) => setFormData({ ...formData, enseignant: e.target.value })} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Non attribué</option>
+                                    {teachers.map(t => <option key={t.id} value={t.id}>{t.first_name} {t.last_name}</option>)}
+                                </select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Coefficient</label>
+                                    <input type="number" step="0.5" min="0.5" value={formData.coefficient} onChange={(e) => setFormData({ ...formData, coefficient: parseFloat(e.target.value) })} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Heures CM</label>
+                                    <input type="number" min="0" value={formData.heures_cm} onChange={(e) => setFormData({ ...formData, heures_cm: parseInt(e.target.value) })} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Heures TD</label>
+                                    <input type="number" min="0" value={formData.heures_td} onChange={(e) => setFormData({ ...formData, heures_td: parseInt(e.target.value) })} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Heures TP</label>
+                                    <input type="number" min="0" value={formData.heures_tp} onChange={(e) => setFormData({ ...formData, heures_tp: parseInt(e.target.value) })} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                </div>
+                            </div>
+                            <div className="flex justify-end gap-3 pt-2">
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg">Annuler</button>
+                                <button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                                    {createMutation.isPending || updateMutation.isPending ? 'Enregistrement...' : 'Sauvegarder'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

@@ -25,10 +25,28 @@ export default function AdminDepartements() {
         item.code.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // 3. MUTATIONS (Placeholder for now, just DELETE works)
+    // 3. MUTATIONS
     const deleteMutation = useMutation({
         mutationFn: departementAPI.delete,
         onSuccess: () => queryClient.invalidateQueries(['departements']),
+    });
+
+    const createMutation = useMutation({
+        mutationFn: departementAPI.create,
+        onSuccess: () => {
+            queryClient.invalidateQueries(['departements']);
+            setIsModalOpen(false);
+            setFormData({ code: '', name: '', description: '' });
+        },
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: ({ id, data }) => departementAPI.update(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries(['departements']);
+            setIsModalOpen(false);
+            setEditingItem(null);
+        },
     });
 
     const handleDelete = (id) => {
@@ -37,9 +55,18 @@ export default function AdminDepartements() {
         }
     };
 
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (editingItem) {
+            updateMutation.mutate({ id: editingItem.id, data: formData });
+        } else {
+            createMutation.mutate(formData);
+        }
+    };
+
     const openModal = (item = null) => {
         setEditingItem(item);
-        setFormData(item ? { code: item.code, name: item.name, description: item.description } : { code: '', name: '', description: '' });
+        setFormData(item ? { code: item.code, name: item.name, description: item.description || '' } : { code: '', name: '', description: '' });
         setIsModalOpen(true);
     };
 
@@ -96,16 +123,48 @@ export default function AdminDepartements() {
                 </div>
             )}
 
-            {/* Modal Placeholder */}
+            {/* Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-xl max-w-md w-full p-6 animate-in zoom-in-95">
                         <h2 className="text-xl font-bold mb-4">{editingItem ? "Modifier" : "Créer"} Département</h2>
-                        <p className="text-slate-500 mb-6">Formulaire simplifié pour démo.</p>
-                        <div className="flex justify-end gap-3">
-                            <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg">Annuler</button>
-                            <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 bg-blue-600 text-white rounded-lg">Sauvegarder</button>
-                        </div>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Code</label>
+                                <input
+                                    type="text"
+                                    value={formData.code}
+                                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Nom</label>
+                                <input
+                                    type="text"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                                <textarea
+                                    value={formData.description}
+                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    rows="3"
+                                />
+                            </div>
+                            <div className="flex justify-end gap-3 pt-2">
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg">Annuler</button>
+                                <button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                                    {createMutation.isPending || updateMutation.isPending ? 'Enregistrement...' : 'Sauvegarder'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
